@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Painel local para organizar o acervo da 2ª Vara Cível de Aracati." />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'" />
     <title>Radar do Acervo</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -109,7 +110,7 @@
     </main>
 
     <template id="queue-template"><article class="queue-card"><div class="queue-card-top"><span class="queue-dot"></span><span class="queue-count"></span></div><h3></h3><p class="queue-detail"></p><button class="text-button">Ver lote</button></article></template>
-    <script src="vendor/xlsx-0.18.5.full.min.js" defer></script>
-    <script src="app.js?v=7" defer></script>
+    <script src="vendor/xlsx.full.min.js?v=0.20.3" defer></script>
+    <script src="app.js?v=8" defer></script>
   </body>
 </html>

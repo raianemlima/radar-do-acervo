@@ -18,13 +18,17 @@ A lista especial é exclusivamente textual: considera classe, assunto e último 
 
 ## Formato CSV
 
-Use `amostra-ped.csv` como referência. O app reconhece os relatórios PED mesmo quando há linhas de título antes do cabeçalho, incluindo CSV em Windows-1252 separado por vírgulas. São reconhecidas as colunas **Processo**, **Descrição da Movimentação** e **Data da Última movimentação**, além de variações de número CNJ, movimento, classe, assunto e data. Em arquivos Excel (`.xls`, `.xlsx` e `.xlsm`), a aba com essas colunas será importada.
+Use `amostra-ped.csv` como referência. O app reconhece os relatórios PED mesmo quando há linhas de título antes do cabeçalho, incluindo CSV em Windows-1252 separado por vírgulas. São reconhecidas as colunas **Processo**, **Descrição da Movimentação** e **Data da Última movimentação**, além de variações de número CNJ, movimento, classe, assunto e data. Em arquivos Excel (`.xls`, `.xlsx` e `.xlsm`), a aba com essas colunas será importada. A cópia local do SheetJS Community Edition 0.20.3 está em `vendor/`.
 
-O PDF precisa ter texto selecionável. A leitura do relatório PED considera cabeçalhos e números de processo quebrados entre linhas e extrai os campos pela posição das colunas. PDFs digitalizados como imagem ainda precisam de OCR antes da importação.
+O PDF precisa ter texto selecionável. A leitura do relatório PED considera cabeçalhos e números de processo quebrados entre linhas e extrai os campos pela posição das colunas. PDFs digitalizados como imagem ainda precisam de OCR antes da importação. O parser PDF.js 6.3.289 também é incluído localmente em `vendor/`.
 
 ## Rodar localmente
 
 Sirva a pasta com qualquer servidor estático e abra a página em um navegador moderno. Os leitores de Excel e PDF são incluídos em `vendor/`, sem baixar dependências durante a importação. O app é estático e não precisa de servidor de aplicação.
+
+## Verificações automatizadas
+
+Com Node.js 24 ou superior instalado, execute `node --check app.js` e `node tests/test-app.mjs`. O mesmo teste roda automaticamente em pull requests e em atualizações da branch `main` no GitHub Actions; usa arquivos de exemplo criados em memória e não depende dos arquivos do usuário.
 
 ## Publicar no GitHub Pages
 
