@@ -39,15 +39,33 @@ function route(row) { const text = normal(row.movement); const rule = rules.find
 function makeRow(process, className, subject, date, movement) { const lastDate = parseDate(date); const idleDays = daysAgo(lastDate); const base = { process:String(process || "Sem número"), className:String(className || "Não informado"), subject:String(subject || "Não informado"), lastDate, movement:String(movement || "Movimento não identificado"), idleDays }; return { ...base, priority:priority(base), ...route(base) }; }
 
 function parseCsv(text) {
-  const first = text.split(/\r?\n/).find((line) => line.trim()) || "";
-  const delimiter = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ";" : ",";
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
-  const readLine = (line) => { const out=[]; let cell="", quote=false; for(let i=0;i<line.length;i++){ const char=line[i]; if(char==='"') { if(quote && line[i+1]==='"') { cell+='"'; i++; } else quote=!quote; } else if(char===delimiter && !quote) { out.push(cell.trim()); cell=""; } else cell+=char; } out.push(cell.trim()); return out; };
-  const headers = readLine(lines.shift()).map(normal);
+  const source = text.replace(/^\uFEFF/, "");
+  const parseRecords = (delimiter) => {
+    const records=[]; let record=[], cell="", quoted=false;
+    for(let i=0;i<source.length;i++) {
+      const char=source[i];
+      if(char==='"') {
+        if(quoted && source[i+1]==='"') { cell+='"'; i++; }
+        else quoted=!quoted;
+      } else if(char===delimiter && !quoted) { record.push(cell.trim()); cell=""; }
+      else if((char==="\n" || char==="\r") && !quoted) {
+        if(char==="\r" && source[i+1]==="\n") i++;
+        record.push(cell.trim()); cell="";
+        if(record.some((value)=>value!=="")) records.push(record);
+        record=[];
+      } else cell+=char;
+    }
+    record.push(cell.trim()); if(record.some((value)=>value!=="")) records.push(record);
+    return records;
+  };
+  const countSeparators = (delimiter) => { let quoted=false,count=0; for(let i=0;i<source.length;i++){ const c=source[i]; if(c==='"'){ if(quoted && source[i+1]==='"') i++; else quoted=!quoted; } else if(!quoted && (c==="\r" || c==="\n")) break; else if(!quoted && c===delimiter) count++; } return count; };
+  const delimiter = countSeparators(";") >= countSeparators(",") ? ";" : ",";
+  const records = parseRecords(delimiter);
+  const headers = (records.shift() || []).map(normal);
   const field = (names) => { const index = headers.findIndex((header) => names.some((name) => header.includes(name))); return index; };
   const indexes = { process:field(["processo","numero","número"]), className:field(["classe"]), subject:field(["assunto"]), date:field(["data", "movimento em"]), movement:field(["ultimo movimento","último movimento","descricao","descrição","movimento"]) };
   if (indexes.process < 0 || indexes.movement < 0) throw new Error("Não encontrei as colunas ‘processo’ e ‘último movimento’. Baixe o modelo CSV para conferir o formato.");
-  return lines.map(readLine).map((cells) => makeRow(cells[indexes.process], cells[indexes.className], cells[indexes.subject], cells[indexes.date], cells[indexes.movement])).filter((row) => row.process !== "Sem número");
+  return records.map((cells) => makeRow(cells[indexes.process], cells[indexes.className], cells[indexes.subject], cells[indexes.date], cells[indexes.movement])).filter((row) => row.process !== "Sem número");
 }
 function rowsShown() { const search = normal($("search").value); const age = $("age-filter").value; const priorityFilter = $("priority-filter").value; return allRows.filter((row) => { const searchable = normal(`${row.process} ${row.movement} ${row.action}`); return (!search || searchable.includes(search)) && (age === "all" || ageState(row.idleDays) === age) && (priorityFilter === "all" || (priorityFilter === "yes" ? row.priority !== "Não" : row.priority === "Não")) && (!activeQueue || row.action === activeQueue); }); }
 function queueStats(rows) { const map = new Map(); rows.forEach((row) => map.set(row.action, [...(map.get(row.action)||[]),row])); return [...map.entries()].sort((a,b)=>b[1].length-a[1].length); }
@@ -61,10 +79,24 @@ function csvFor(rows) { const header=["Processo","Classe","Assunto","Data do úl
 function download(name, data) { const url=URL.createObjectURL(new Blob([data],{type:"text/csv;charset=utf-8"})); const link=document.createElement("a"); link.href=url; link.download=name; link.click(); URL.revokeObjectURL(url); }
 function importRows(rows, description) { allRows=rows; activeQueue=null; $("upload-feedback").textContent=`${rows.length.toLocaleString("pt-BR")} processos carregados${description ? ` · ${description}` : ""}. Confira os encaminhamentos antes de usar.`; render(); }
 async function readPdf(file) { $("upload-feedback").textContent="Lendo o PDF localmente…";
-  const pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+  let pdfjs;
+  try {
+    pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+  } catch {
+    throw new Error("A biblioteca de leitura de PDF não pôde ser carregada. Verifique a conexão e abra o app pelo GitHub Pages.");
+  }
   pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
   const pdf = await pdfjs.getDocument({data:await file.arrayBuffer()}).promise; let text=""; for(let page=1; page<=pdf.numPages; page++){ const content=await (await pdf.getPage(page)).getTextContent(); text += `${content.items.map((item)=>item.str).join(" ")}\n`; }
-  const chunks=text.split(/(?=\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/g); const rows=chunks.map((chunk)=>{ const process=(chunk.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/)||[])[0]; const date=(chunk.match(/\d{2}\/\d{2}\/\d{4}/)||[])[0]; if(!process) return null; const movement=chunk.replace(process,"").replace(date||"","").replace(/\s+/g," ").trim().slice(-420); return makeRow(process,"Não identificado","Não identificado",date,movement); }).filter(Boolean);
+  const cnjPattern = /(?=\d{7}\s*-\s*\d{2}\s*\.\s*\d{4}\s*\.\s*\d\s*\.\s*\d{2}\s*\.\s*\d{4})/g;
+  const chunks=text.split(cnjPattern);
+  const rows=chunks.map((chunk)=>{
+    const match=chunk.match(/\d{7}\s*-\s*\d{2}\s*\.\s*\d{4}\s*\.\s*\d\s*\.\s*\d{2}\s*\.\s*\d{4}/);
+    const process=match?.[0].replace(/\s+/g,"");
+    const date=(chunk.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/)||[])[0];
+    if(!process) return null;
+    const movement=chunk.replace(match[0],"").replace(date||"","").replace(/\s+/g," ").trim().slice(-420);
+    return makeRow(process,"Não identificado","Não identificado",date,movement);
+  }).filter(Boolean);
   if(!rows.length) throw new Error("Não foi possível localizar números CNJ no PDF. Exporte o relatório como CSV e importe-o aqui."); importRows(rows,"extraídos do PDF — valide o texto do movimento");
 }
 
