@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Painel local para organizar o acervo da 2ª Vara Cível de Aracati." />
+    <title>Radar do Acervo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">2ª Vara Cível de Aracati</p>
+        <h1>Radar do Acervo</h1>
+      </div>
+      <div class="status-local" aria-label="Privacidade dos dados">
+        <span aria-hidden="true">◉</span> Processamento local no navegador
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow">Fase 1 · triagem por regras</p>
+          <h2 id="hero-title">Transforme o PED em filas de trabalho claras.</h2>
+          <p>Importe uma planilha exportada do PED ou experimente a leitura assistida de PDF. O painel cria lotes, destaca prioridades e permite exportar listas para uso no PJe.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="button primary" id="load-demo">Abrir demonstração</button>
+          <a class="button ghost" href="amostra-ped.csv" download>Baixar modelo CSV</a>
+        </div>
+      </section>
+
+      <section class="upload-panel" aria-labelledby="import-title">
+        <div>
+          <p class="eyebrow">Importar relatório</p>
+          <h2 id="import-title">Carregar dados do PED</h2>
+          <p class="muted">Para resultados mais confiáveis, exporte o PED como CSV. O PDF é lido somente neste dispositivo e precisa de conferência.</p>
+        </div>
+        <div class="upload-actions">
+          <label class="file-button">Importar CSV<input id="csv-input" type="file" accept=".csv,text/csv" /></label>
+          <label class="file-button secondary">Ler PDF<input id="pdf-input" type="file" accept="application/pdf" /></label>
+        </div>
+        <p class="upload-feedback" id="upload-feedback" role="status"></p>
+      </section>
+
+      <section id="empty-state" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">⌁</div>
+        <h2>O painel está pronto</h2>
+        <p>Importe o PED ou abra a demonstração para ver as filas de trabalho.</p>
+      </section>
+
+      <div id="app-content" hidden>
+        <section class="filters" aria-label="Filtros do painel">
+          <div class="filter-heading"><p class="eyebrow">Visão do acervo</p><h2 id="dataset-title">Processos importados</h2></div>
+          <label>Buscar processo ou movimento<input id="search" type="search" placeholder="Ex.: 0001234 ou juntada" /></label>
+          <label>Situação<select id="age-filter"><option value="all">Todas as situações</option><option value="green">Até 30 dias</option><option value="yellow">31 a 100 dias</option><option value="red">Mais de 100 dias</option></select></label>
+          <label>Prioridade<select id="priority-filter"><option value="all">Todas</option><option value="yes">Prioridade legal</option><option value="no">Sem prioridade</option></select></label>
+        </section>
+
+        <section class="metrics" aria-label="Indicadores principais">
+          <article><p>Total na seleção</p><strong id="total-count">0</strong><span>processos</span></article>
+          <article class="metric-red"><p>Mais de 100 dias</p><strong id="over-100-count">0</strong><span>atenção imediata</span></article>
+          <article><p>Parados há 1 ano</p><strong id="over-year-count">0</strong><span>prioridade de saneamento</span></article>
+          <article><p>Metas CNJ (≤ 2015)</p><strong id="cnj-count">0</strong><span>processos antigos</span></article>
+        </section>
+
+        <section class="work-queues" aria-labelledby="queues-title">
+          <div class="section-title"><div><p class="eyebrow">Lotes sugeridos</p><h2 id="queues-title">Filas por próximo ato</h2></div><p class="muted">Regras editáveis; valide-as antes do uso oficial.</p></div>
+          <div id="queue-cards" class="queue-grid"></div>
+        </section>
+
+        <section class="table-section" aria-labelledby="table-title">
+          <div class="section-title table-title"><div><p class="eyebrow">Conferência</p><h2 id="table-title">Processos e encaminhamentos</h2></div><div class="table-actions"><button class="button ghost" id="export-visible">Exportar seleção</button><button class="button ghost" id="export-all">Exportar todos</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Processo</th><th>Último movimento</th><th>Data</th><th>Parado</th><th>Próximo ato</th><th>Responsável</th><th>Prioridade</th></tr></thead><tbody id="process-table"></tbody></table></div>
+        </section>
+
+        <section class="rules-note">
+          <h2>Como o encaminhamento é definido</h2>
+          <p>Esta versão usa uma tabela simples de termos do último movimento. Casos sem correspondência ficam marcados como <strong>LER AUTOS</strong>; nenhum dado é enviado ao PJe, e nenhuma movimentação é realizada pelo app.</p>
+        </section>
+      </div>
+    </main>
+
+    <template id="queue-template"><article class="queue-card"><div class="queue-card-top"><span class="queue-dot"></span><span class="queue-count"></span></div><h3></h3><p class="queue-detail"></p><button class="text-button">Ver lote</button></article></template>
+    <script src="app.js"></script>
+  </body>
+</html>
