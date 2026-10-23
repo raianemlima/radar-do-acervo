@@ -21,9 +21,9 @@
     <main>
       <section class="hero" aria-labelledby="hero-title">
         <div>
-          <p class="eyebrow">Fase 1 · triagem por regras</p>
-          <h2 id="hero-title">Transforme o PED em filas de trabalho claras.</h2>
-          <p>Importe uma planilha exportada do PED ou experimente a leitura assistida de PDF. O painel cria lotes, destaca prioridades e permite exportar listas para uso no PJe.</p>
+          <p class="eyebrow">Fase 1 · triagem por metadados</p>
+          <h2 id="hero-title">Encontre sinais que merecem conferência humana.</h2>
+          <p>Importe o PED para organizar o acervo, localizar sinais textuais e preparar uma fila de revisão. O painel não consulta autos nem altera o PJe.</p>
         </div>
         <div class="hero-actions">
           <button class="button primary" id="load-demo">Abrir demonstração</button>
@@ -35,11 +35,12 @@
         <div>
           <p class="eyebrow">Importar relatório</p>
           <h2 id="import-title">Carregar dados do PED</h2>
-          <p class="muted">Para resultados mais confiáveis, exporte o PED como CSV. O PDF é lido somente neste dispositivo e precisa de conferência.</p>
+          <p class="muted">Importe CSV, Excel ou PDF com texto selecionável. Arquivos digitalizados como imagem precisam de OCR antes. Tudo é processado neste dispositivo.</p>
         </div>
         <div class="upload-actions">
           <label class="file-button">Importar CSV<input id="csv-input" type="file" accept=".csv,text/csv" /></label>
-          <label class="file-button secondary">Ler PDF<input id="pdf-input" type="file" accept="application/pdf" /></label>
+          <label class="file-button secondary">Importar Excel<input id="excel-input" type="file" accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" /></label>
+          <label class="file-button secondary">Ler PDF<input id="pdf-input" type="file" accept="application/pdf,.pdf" /></label>
         </div>
         <p class="upload-feedback" id="upload-feedback" role="status"></p>
       </section>
@@ -55,34 +56,60 @@
           <div class="filter-heading"><p class="eyebrow">Visão do acervo</p><h2 id="dataset-title">Processos importados</h2></div>
           <label>Buscar processo ou movimento<input id="search" type="search" placeholder="Ex.: 0001234 ou juntada" /></label>
           <label>Situação<select id="age-filter"><option value="all">Todas as situações</option><option value="green">Até 30 dias</option><option value="yellow">31 a 100 dias</option><option value="red">Mais de 100 dias</option></select></label>
-          <label>Prioridade<select id="priority-filter"><option value="all">Todas</option><option value="yes">Prioridade legal</option><option value="no">Sem prioridade</option></select></label>
+          <label>Indícios para revisão<select id="priority-filter"><option value="all">Todos</option><option value="yes">Com sinal textual</option><option value="no">Sem sinal no recorte</option></select></label>
         </section>
 
         <section class="metrics" aria-label="Indicadores principais">
           <article><p>Total na seleção</p><strong id="total-count">0</strong><span>processos</span></article>
-          <article class="metric-red"><p>Mais de 100 dias</p><strong id="over-100-count">0</strong><span>atenção imediata</span></article>
-          <article><p>Parados há 1 ano</p><strong id="over-year-count">0</strong><span>prioridade de saneamento</span></article>
-          <article><p>Metas CNJ (≤ 2015)</p><strong id="cnj-count">0</strong><span>processos antigos</span></article>
+          <article class="metric-red"><p>Menção a urgência/risco</p><strong id="urgent-count">0</strong><span>não confirma pedido pendente</span></article>
+          <article><p>Menção a criança/adolescente</p><strong id="child-count">0</strong><span>validar papel e situação nos autos</span></article>
+          <article><p>Mais de 100 dias</p><strong id="over-100-count">0</strong><span>indicador gerencial, não prazo legal</span></article>
+          <article><p>Menção a audiência</p><strong id="hearing-count">0</strong><span>situação não confirmada pelo PED</span></article>
+        </section>
+
+        <section class="coverage-note" aria-labelledby="coverage-title">
+          <div class="section-title"><div><p class="eyebrow">Escopo e limites</p><h2 id="coverage-title">O que esta análise consultou</h2></div><span class="coverage-tag">Somente metadados importados</span></div>
+          <p id="coverage-summary">Fonte: relatório PED importado neste dispositivo. Autos, documentos, decisões, filas do PJe, normas locais e Tabelas Processuais Unificadas não foram consultados.</p>
+          <div class="coverage-grid">
+            <p><strong>P0/P1</strong><span id="confirmed-high-count">Não classificáveis sem análise dos autos</span></p>
+            <p><strong>P2 · revisão gerencial</strong><span id="p2-count">0</span></p>
+            <p><strong>P3 · saneamento de dados</strong><span id="p3-count">0</span></p>
+            <p><strong>Urgência/prioridade + demora</strong><span id="overlap-count">0 — sinais para conferir</span></p>
+            <p><strong>Campos cadastrais ausentes</strong><span id="cadastro-count">0</span></p>
+            <p><strong>Prazo legal</strong><span>Não verificado</span></p>
+          </div>
+          <p class="coverage-caveat">Ausência de sinal no relatório não significa ausência de urgência ou prioridade. “Sem dado no recorte” não significa “documento inexistente”. Nenhuma classe, competência, prioridade legal ou pendência processual é confirmada sem revisão humana das fontes pertinentes.</p>
         </section>
 
         <section class="work-queues" aria-labelledby="queues-title">
-          <div class="section-title"><div><p class="eyebrow">Lotes sugeridos</p><h2 id="queues-title">Filas por próximo ato</h2></div><p class="muted">Regras editáveis; valide-as antes do uso oficial.</p></div>
+          <div class="section-title"><div><p class="eyebrow">Lotes sugeridos</p><h2 id="queues-title">Filas para revisão humana</h2></div><p class="muted">Sinais extraídos do último movimento; não são decisões nem prazos legais.</p></div>
           <div id="queue-cards" class="queue-grid"></div>
         </section>
 
         <section class="table-section" aria-labelledby="table-title">
           <div class="section-title table-title"><div><p class="eyebrow">Conferência</p><h2 id="table-title">Processos e encaminhamentos</h2></div><div class="table-actions"><button class="button ghost" id="export-visible">Exportar seleção</button><button class="button ghost" id="export-all">Exportar todos</button></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Processo</th><th>Último movimento</th><th>Data</th><th>Parado</th><th>Próximo ato</th><th>Responsável</th><th>Prioridade</th></tr></thead><tbody id="process-table"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Processo</th><th>Faixa gerencial</th><th>Último movimento / evidência disponível</th><th>Data de origem</th><th>Dias desde movimentação</th><th>Urgência / prioridade</th><th>Audiência</th><th>Cadastro / qualidade da origem</th><th>Revisão sugerida</th><th>Confiança</th></tr></thead><tbody id="process-table"></tbody></table></div>
+        </section>
+
+        <section class="table-section special-list-section" aria-labelledby="special-list-title">
+          <div class="section-title table-title">
+            <div><p class="eyebrow">Lista independente · <span id="special-count">0</span> processos</p><h2 id="special-list-title">Ato infracional, adoção e medida de proteção</h2><p class="muted">Inclui somente menções localizadas em classe, assunto ou último movimento do relatório importado.</p></div>
+            <button class="button ghost" id="export-special">Exportar esta lista</button>
+          </div>
+          <p id="special-empty" class="special-empty">Nenhuma menção correspondente foi localizada no recorte importado. Isso não exclui a existência da informação nos autos.</p>
+          <div class="table-wrap" id="special-table-wrap" hidden><table><thead><tr><th>Processo</th><th>Categoria(s) localizada(s)</th><th>Campo atual</th><th>Último movimento / evidência</th><th>Data</th><th>Conferência necessária</th></tr></thead><tbody id="special-table"></tbody></table></div>
+          <p class="special-caveat">A lista é uma busca textual em metadados, não confirma o conteúdo ou a fase do processo e não consulta documentos dos autos. Revise no PJe autorizado; não infira situação da criança/adolescente, sigilo, medida vigente ou resultado processual apenas pela menção.</p>
         </section>
 
         <section class="rules-note">
-          <h2>Como o encaminhamento é definido</h2>
-          <p>Esta versão usa uma tabela simples de termos do último movimento. Casos sem correspondência ficam marcados como <strong>LER AUTOS</strong>; nenhum dado é enviado ao PJe, e nenhuma movimentação é realizada pelo app.</p>
+          <h2>Uso responsável</h2>
+          <p>Termos no relatório são apenas pistas de busca. O app não confirma se um pedido foi apreciado, se o risco continua atual, se uma audiência ocorreu, se há prioridade legal ou se classe/assunto/competência estão corretos. Não decide, não recomenda redistribuição e não altera o PJe. Revise cada evidência nas fontes autorizadas antes de agir.</p>
         </section>
       </div>
     </main>
 
     <template id="queue-template"><article class="queue-card"><div class="queue-card-top"><span class="queue-dot"></span><span class="queue-count"></span></div><h3></h3><p class="queue-detail"></p><button class="text-button">Ver lote</button></article></template>
-    <script src="app.js"></script>
+    <script src="vendor/xlsx-0.18.5.full.min.js" defer></script>
+    <script src="app.js?v=7" defer></script>
   </body>
 </html>
