@@ -21,10 +21,18 @@ function parseDate(value) {
   const match = String(value || "").match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
   if (!match) return null;
   let [,day,month,year] = match; if (year.length === 2) year = `20${year}`;
-  const date = new Date(Number(year), Number(month) - 1, Number(day)); return Number.isNaN(date.getTime()) ? null : date;
+  const dayNumber=Number(day), monthNumber=Number(month), yearNumber=Number(year);
+  const date = new Date(yearNumber, monthNumber - 1, dayNumber);
+  return date.getFullYear()===yearNumber&&date.getMonth()===monthNumber-1&&date.getDate()===dayNumber?date:null;
 }
 function asDate(date) { return date ? date.toLocaleDateString("pt-BR") : "Não identificada"; }
-function daysAgo(date) { return date ? Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000)) : null; }
+function daysAgo(date) {
+  if(!date) return null;
+  const now=new Date();
+  const today=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const source=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  return Math.max(0,Math.floor((today-source)/86400000));
+}
 function ageState(days) { return !Number.isFinite(days) ? "unknown" : days <= 30 ? "green" : days <= 100 ? "yellow" : "red"; }
 const signalTerms = {
   urgent:["tutela de urgencia","pedido de liminar","liminar","urgente","risco de morte","risco a vida","risco grave","internacao","tratamento urgente","medida protetiva","acolhimento","violencia","ameaca","integridade fisica","cirurgia urgente"],
@@ -235,17 +243,22 @@ function render() {
 function escapeHtml(value) { return String(value).replace(/[&<>"]/g, (char)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[char])); }
 function csvFor(rows) {
   const header=["Processo","Classe cadastrada","Assunto cadastrado","Data da última movimentação","Última movimentação (evidência do PED)","Dias corridos desde a última movimentação (não é prazo legal)","Faixa gerencial sugerida","Sinal de urgência (não confirmado)","Menção a criança/adolescente (não confirmada)","Prioridade legal (não confirmada)","Situação de audiência (não avaliada pelo PED)","Situação cadastral / limitações","Providência sugerida para revisão humana","Motivos/sinais","Confiança","Responsável","Lista especial — categoria(s) encontrada(s)","Lista especial — termo(s) localizado(s)","Lista especial — campo(s) localizado(s)"];
-  const lines=rows.map((r)=>[r.process,r.className,r.subject,asDate(r.lastDate),r.movement,r.idleDays??"",r.analysis.suggestedBand,r.analysis.urgentStatus,r.analysis.childStatus,r.analysis.priorityStatus,r.analysis.hearingStatus,r.analysis.cadastroStatus,r.analysis.nextStep,r.analysis.reasons.join(" | "),r.analysis.confidence,r.owner,r.specialList.categories.join(" | "),r.specialList.matches.map((match)=>match.term).join(" | "),[...new Set(r.specialList.matches.map((match)=>match.field))].join(" | ")].map((value)=>`"${String(value??"").replaceAll('"','""')}"`).join(";"));
+  const lines=rows.map((r)=>[r.process,r.className,r.subject,asDate(r.lastDate),r.movement,r.idleDays??"",r.analysis.suggestedBand,r.analysis.urgentStatus,r.analysis.childStatus,r.analysis.priorityStatus,r.analysis.hearingStatus,r.analysis.cadastroStatus,r.analysis.nextStep,r.analysis.reasons.join(" | "),r.analysis.confidence,r.owner,r.specialList.categories.join(" | "),r.specialList.matches.map((match)=>match.term).join(" | "),[...new Set(r.specialList.matches.map((match)=>match.field))].join(" | ")].map(csvCell).join(";"));
   return "\uFEFF"+[header.join(";"),...lines].join("\n");
+}
+function csvCell(value) {
+  let text=String(value??"");
+  if(/^[\s\uFEFF]*[=+\-@]/.test(text)) text=`'${text}`;
+  return `"${text.replaceAll('"','""')}"`;
 }
 function download(name, data) { const url=URL.createObjectURL(new Blob([data],{type:"text/csv;charset=utf-8"})); const link=document.createElement("a"); link.href=url; link.download=name; link.click(); URL.revokeObjectURL(url); }
 function importRows(rows, description) { allRows=rows; activeQueue=null; importedSource=description||"relatório PED"; const count=rows.length; const noun=count===1?"processo carregado":"processos carregados"; const reference=new Date().toLocaleString("pt-BR"); $("upload-feedback").textContent=`${count.toLocaleString("pt-BR")} ${noun}${description ? ` · ${description}` : ""}. Confira os sinais e evidências nos autos autorizados.`; $("coverage-summary").textContent=`Unidade configurada: 2ª Vara Cível de Aracati · referência: ${reference} · fonte: ${importedSource} (${count.toLocaleString("pt-BR")} processos). A faixa acima de 100 dias é um indicador visual provisório, não um limiar local validado. Foram analisados somente os campos presentes no arquivo; PJe, autos, documentos, decisões, normas locais e TPU não foram consultados.`; render(); }
 async function readPdf(file) {
   $("upload-feedback").textContent="Lendo o PDF localmente…";
   let pdfjs;
-  try { pdfjs=await import("./vendor/pdf.min.mjs?v=5.6.205"); }
+  try { pdfjs=await import("./vendor/pdf.min.mjs?v=6.3.289"); }
   catch { throw new Error("O leitor local de PDF não carregou. Atualize a página e tente novamente."); }
-  pdfjs.GlobalWorkerOptions.workerSrc=new URL("vendor/pdf.worker.min.mjs?v=5.6.205",document.baseURI).href;
+  pdfjs.GlobalWorkerOptions.workerSrc=new URL("vendor/pdf.worker.min.mjs?v=6.3.289",document.baseURI).href;
   const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
   const pages=[]; let text="";
   for(let page=1;page<=pdf.numPages;page++) {
