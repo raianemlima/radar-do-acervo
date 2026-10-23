@@ -62,8 +62,19 @@ function parseCsv(text) {
   const delimiter = countSeparators(";") >= countSeparators(",") ? ";" : ",";
   const records = parseRecords(delimiter);
   const headers = (records.shift() || []).map(normal);
-  const field = (names) => { const index = headers.findIndex((header) => names.some((name) => header.includes(name))); return index; };
-  const indexes = { process:field(["processo","numero","número"]), className:field(["classe"]), subject:field(["assunto"]), date:field(["data", "movimento em"]), movement:field(["ultimo movimento","último movimento","descricao","descrição","movimento"]) };
+  const field = (names, { excludeDate = false } = {}) => {
+    const normalizedNames = names.map(normal);
+    const exact = headers.findIndex((header) => normalizedNames.includes(header));
+    if (exact >= 0) return exact;
+    return headers.findIndex((header) => (!excludeDate || !/^(data|dt)\b/.test(header)) && normalizedNames.some((name) => header.includes(name)));
+  };
+  const indexes = {
+    process:field(["processo","numero"]),
+    className:field(["classe"]),
+    subject:field(["assunto"]),
+    date:field(["data do ultimo movimento","data","movimento em"]),
+    movement:field(["ultimo movimento","descricao","movimento"], {excludeDate:true}),
+  };
   if (indexes.process < 0 || indexes.movement < 0) throw new Error("Não encontrei as colunas ‘processo’ e ‘último movimento’. Baixe o modelo CSV para conferir o formato.");
   return records.map((cells) => makeRow(cells[indexes.process], cells[indexes.className], cells[indexes.subject], cells[indexes.date], cells[indexes.movement])).filter((row) => row.process !== "Sem número");
 }
